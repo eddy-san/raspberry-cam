@@ -50,7 +50,8 @@ Designed for robustness, automation, and integration into IoT workflows.
 
 ## Sample Image
 
-Here is a sample capture from the Raspberry Pi webcam:
+Here’s a sample capture from the Raspberry Pi webcam.  
+The bottom of the image is blurred to protect my neighbours’ privacy.
 
 ![Webcam Sample](docs/webcam-sample.jpg)
 
