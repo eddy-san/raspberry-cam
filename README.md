@@ -48,5 +48,12 @@ Designed for robustness, automation, and integration into IoT workflows.
 └── .gitignore
 ```
 
+## Sample Image
+
+Here is a sample capture from the Raspberry Pi webcam:
+
+![Webcam Sample](docs/webcam-sample.jpg)
+
+
 ## License
 This project is licensed under the [MIT License](LICENSE).
