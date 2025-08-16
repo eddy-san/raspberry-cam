@@ -1,0 +1,8 @@
+{
+  "remote_user": "pls specify SFTP user",
+  "remote_host": "pls specify SFTP remote host",
+  "password": "pls specify SFTP pwd",
+  "remote_path": "/",
+  "remote_file": "IMG_4903.jpg",
+  "local_file": "IMG_4903.jpg"
+}
