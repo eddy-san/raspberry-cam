@@ -4,5 +4,6 @@
   "password": "pls specify SFTP pwd",
   "remote_path": "/",
   "remote_file": "IMG_4903.jpg",
-  "local_file": "IMG_4903.jpg"
+  "local_file": "IMG_4903.jpg",
+  "openweathermap_api_key": "pls enter openweathermap api key"
 }

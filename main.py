@@ -4,6 +4,7 @@ from pathlib import Path
 from modules.capture import capture_fswebcam
 from modules.upload import upload
 
+
 def main():
     with open("config.local.json", "r", encoding="utf-8") as f:
         cfg = json.load(f)
@@ -26,6 +27,7 @@ def main():
     fixed_path = base / "jpg" / "current"/ "IMG_4903.jpg"
     upload(cfg, fixed_path)
     print("➡️ Upload:", fixed_path)
+
 
 
 
