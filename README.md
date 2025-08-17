@@ -10,6 +10,12 @@ All results are saved as JSON files and additionally organized in a `classified`
 - Current image is stored in `jpg/current/IMG_4903.jpg`.
 - All captures are archived into `jpg/old/<timestamp>.jpg`.
 
+### 🌅 Daylight Gate (No Night Shots)
+- New script `00_daylight_gate.sh` uses **sunwait** to calculate **civil dawn** and **civil dusk** based on your coordinates.
+- `02_take_webcam_picture.sh` calls this gate before capturing an image.
+- If it is **night** (before dawn or after dusk), the script exits with code `3` → no image and no JSON are generated.
+- Ensures that only **daylight captures** are taken, avoiding useless black night shots.
+
 ### 🌦️ Weather Data (OpenWeatherMap)
 - New module `openweathermap.py` fetches current weather data based on the configuration (`config.local.json`).
 - API key & city (`Laufamholz,de`) are loaded from the config file.
@@ -97,7 +103,11 @@ The bottom of the image is blurred to protect my neighbours’ privacy.
    ```bash
    pip install requests
    ```
-4. Run the main script:
+4. Install `sunwait` (required for daylight check):
+   ```bash
+   sudo apt-get install sunwait
+   ```
+5. Run the main script:
    ```bash
    python3 main.py
    ```

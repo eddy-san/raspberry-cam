@@ -5,7 +5,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DIR="${SCRIPT_DIR}/../jpg/current"
 
-# Ordner anlegen und Inhalt löschen
+# --- 0) Daylight-Gate aufrufen ---
+GATE_OUT=$("$SCRIPT_DIR/00_daylight_gate.sh" 2>&1)
+rc=$?
+echo "$GATE_OUT" >&2   # Debug nach STDERR
+
+if [ $rc -eq 3 ]; then
+  echo "Night window – skip capture." >&2
+  exit 3
+elif [ $rc -ne 0 ]; then
+  echo "Daylight-Gate Fehler (exit $rc)" >&2
+  exit $rc
+fi
+
+# --- 1) Aufnahme nur wenn Tag ---
 mkdir -p "$CURRENT_DIR"
 rm -f "$CURRENT_DIR"/*
 
@@ -49,6 +62,6 @@ cp "$OUT_IMG" "$LIVE_IMG"
 # Aufräumen
 rm -f "$CURRENT_DIR/lightly.png" "$CURRENT_DIR/fully.png" "$CURRENT_DIR/mask.png"
 
-# Vollständigen Pfad ausgeben
+# Nur bei Erfolg den Pfad ausgeben
 echo "$OUT_IMG"
 

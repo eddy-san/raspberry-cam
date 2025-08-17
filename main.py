@@ -1,5 +1,6 @@
 import json
 import shutil
+import sys
 from pathlib import Path
 from modules.capture import capture_fswebcam
 from modules.upload import upload
@@ -14,9 +15,6 @@ def main():
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
-    # Leeres JSON Objekt
-    weather_data = {}
-
     # Pfade
     scripts_dir = base / "modules"
     script_path = scripts_dir / "02_take_webcam_picture.sh"
@@ -30,29 +28,35 @@ def main():
     old_dir.mkdir(parents=True, exist_ok=True)
     json_dir.mkdir(parents=True, exist_ok=True)
 
-    # Bild aufnehmen (Skript legt es in jpg/current/IMG_4903.jpg ab)
+    # Bild aufnehmen
     img_path = capture_fswebcam(script_path)
+
+    # === Nacht / kein Bild ===
+    if img_path is None or not img_path.exists():
+        print("🌙 Kein Bild aufgenommen (Nacht oder Skip) – keine Verarbeitung.")
+        sys.exit(0)   # Exit 0 = alles ok, nur nichts zu tun
+
     print("➡️ img_path:", img_path)
 
-    # Nach jpg/old/ verschieben (dauerhaftes Archiv mit Timestamp)
+    # Ab hier nur wenn ein Bild existiert
+    weather_data = {}
+
+    # Nach jpg/old/ verschieben
     old_path = old_dir / img_path.name
     shutil.move(str(img_path), str(old_path))
     print("📸 Bild verschoben nach:", old_path)
 
-    # old_path in JSON speichern
     weather_data["old_path"] = str(old_path)
 
-    # Upload aus dem current-Verzeichnis (das Shellskript kümmert sich darum)
+    # Upload
     upload(cfg, fixed_path)
     print("➡️ Upload:", fixed_path)
 
-    # OpenWeatherMap-Daten abrufen und ins JSON mergen
+    # OWM + Klassifikation
     openweathermap.getOpenweathermapData(weather_data, cfg)
-
-    # Klassifikation hinzufügen
     classify.classify_weather(weather_data)
 
-    # JSON-Dateiname passend zum Bildnamen (gleicher Stem)
+    # JSON speichern
     json_path = json_dir / (old_path.stem + ".json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(weather_data, f, indent=4, ensure_ascii=False)
@@ -60,7 +64,7 @@ def main():
     print(f"✅ JSON gespeichert: {json_path}")
     print(json.dumps(weather_data, indent=4, ensure_ascii=False))
 
-    # === Kopie in classified/<classification>/ ablegen ===
+    # In classified ablegen
     classified_base_dir = base / "jpg" / "classified"
     classify.copy_to_classified(weather_data, old_path, json_path, classified_base_dir)
 
