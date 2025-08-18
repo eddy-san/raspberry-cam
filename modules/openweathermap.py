@@ -5,16 +5,16 @@ def getOpenweathermapData(weather_json: dict, cfg: dict):
     if not api_key:
         raise ValueError("API key fehlt in der Konfiguration!")
 
-    # Ort auf Laufamholz, Deutschland setzen (falls nichts anderes in cfg steht)
+    # Ort (Fallback: Laufamholz,de)
     city = cfg.get("city", "Laufamholz,de")
 
     url = (
-        f"http://api.openweathermap.org/data/2.5/weather"
+        "http://api.openweathermap.org/data/2.5/weather"
         f"?q={city}&appid={api_key}&units=metric"
     )
 
     try:
-        response = requests.get(url, timeout=10)  # Timeout 10 Sekunden
+        response = requests.get(url, timeout=10)
         if response.status_code != 200:
             weather_json["openweathermap"] = {
                 "error": f"API request failed: {response.text}"
@@ -22,7 +22,8 @@ def getOpenweathermapData(weather_json: dict, cfg: dict):
             return
 
         data = response.json()
-        weather_json.update(data)
+        # >>> NEU: alles sauber gekapselt unter 'openweathermap'
+        weather_json["openweathermap"] = data
 
     except requests.Timeout:
         weather_json["openweathermap"] = {
