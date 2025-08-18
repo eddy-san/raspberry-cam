@@ -66,12 +66,18 @@ def _level(speed, gust, watch_wind, storm_wind):
 
 
 def _extract_wind(data: dict):
-    """Zieht Winddaten aus dem JSON. 'gust' ist optional."""
-    wind = data.get("wind", {})
+    """
+    Zieht Wind/Ort aus dem JSON. Bevorzugt neues Schema unter data['openweathermap'],
+    fällt ansonsten auf Top-Level zurück. 'gust' ist optional.
+    """
+    owm = data.get("openweathermap", data)
+
+    wind = owm.get("wind", {}) or {}
     speed = wind.get("speed")
     gust = wind.get("gust", None)
 
     if speed is None:
+        # Fallback auf deine Klassifikation (falls vorhanden)
         speed = data.get("classification_detail", {}).get("wind_speed_ms", 0.0)
 
     try:
@@ -85,7 +91,8 @@ def _extract_wind(data: dict):
         except Exception:
             gust = None
 
-    location = data.get("name", "N/A")
+    # Standort: bevorzugt aus OWM
+    location = owm.get("name", data.get("name", "N/A"))
     return speed, gust, location
 
 
@@ -96,7 +103,7 @@ def tick(cfg, data):
     """
     Erwartet:
       - cfg: SMTP + storm-Settings
-      - data: JSON-Objekt (z. B. OWM), mind. wind.speed (m/s) oder classification_detail.wind_speed_ms
+      - data: JSON-Objekt; bevorzugt mit data['openweathermap']
     Wirkung:
       - Bestimmt neuen Zustand (OK/WATCH/STORM)
       - Versendet Mail nur bei Zustandswechsel
@@ -166,4 +173,3 @@ if __name__ == "__main__":
         print("Testmail verschickt.")
     else:
         print("Kein Datenobjekt übergeben. Importiere dieses Modul und rufe tick(cfg, data) aus main.py auf.")
-

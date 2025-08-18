@@ -21,14 +21,17 @@ def classify_weather(weather_json: dict) -> None:
       weather[0].id/main -> phenomenon
       wind.speed >= 17.0 m/s -> storm
     """
-    # ---- Eingaben robust lesen
-    clouds = weather_json.get("clouds", {}).get("all", None)
+    # ---- Eingaben robust lesen (neu: bevorzugt verschachtelte OWM-Daten)
+    owm = weather_json.get("openweathermap", weather_json)
+
+    clouds = owm.get("clouds", {}).get("all", None)
     try:
         clouds = int(clouds) if clouds is not None else None
     except Exception:
         clouds = None
 
-    w0 = (weather_json.get("weather") or [{}])[0]
+    w0list = owm.get("weather") or [{}]
+    w0 = w0list[0] if isinstance(w0list, list) and w0list else {}
     wid = w0.get("id")
     try:
         wid = int(wid) if wid is not None else None
@@ -36,7 +39,7 @@ def classify_weather(weather_json: dict) -> None:
         wid = None
     wmain = (w0.get("main") or "").strip()
 
-    wind_speed = weather_json.get("wind", {}).get("speed", None)
+    wind_speed = owm.get("wind", {}).get("speed", None)
     try:
         wind_speed = float(wind_speed) if wind_speed is not None else None
     except Exception:
