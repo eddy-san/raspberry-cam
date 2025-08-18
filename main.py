@@ -6,6 +6,7 @@ from modules.capture import capture_fswebcam
 from modules.upload import upload
 from modules import openweathermap
 from modules import classify
+from modules.stormwarning import tick
 
 def main():
     base = Path(__file__).parent
@@ -56,6 +57,9 @@ def main():
     openweathermap.getOpenweathermapData(weather_data, cfg)
     classify.classify_weather(weather_data)
 
+    # storm warning
+    tick(cfg, weather_data)
+    
     # JSON speichern
     json_path = json_dir / (old_path.stem + ".json")
     with open(json_path, "w", encoding="utf-8") as f:
@@ -67,6 +71,8 @@ def main():
     # In classified ablegen
     classified_base_dir = base / "jpg" / "classified"
     classify.copy_to_classified(weather_data, old_path, json_path, classified_base_dir)
+
+    
 
 
 if __name__ == "__main__":

@@ -44,6 +44,44 @@ All results are saved as JSON files and additionally organized in a `classified`
 - New subfolders are automatically created if not existing.
 - Result: automatically organized training dataset (images + metadata).
 
+### ⚡ Storm Warning (Automaton)
+- New module `stormwarning.py` implements a **finite state automaton** with three states:
+  - `OK` → normal conditions
+  - `WATCH` → strong wind (≥ 13 m/s by default)
+  - `STORM` → storm alert (≥ 17 m/s by default)
+- The automaton:
+  - Reads wind data (`wind.speed` or `classification_detail.wind_speed_ms`) from the JSON object.
+  - Transitions between states based on thresholds.
+  - Persists its state in `json/stormwarning/storm_state.json`.
+  - Sends an **email notification via SMTP (IONOS-ready)** only when the state changes.
+- Results are also written back into each JSON object under the key `"stormwarning"`, for later analysis together with weather data.
+
+**Example stormwarning block:**
+```json
+"stormwarning": {
+    "prev_state": "OK",
+    "new_state": "WATCH",
+    "mailed": true,
+    "wind_speed": 14.2,
+    "wind_gust": null,
+    "location": "Laufamholz",
+    "state_file": "json/stormwarning/storm_state.json"
+}
+```
+
+Run a test mail:
+```bash
+python3 modules/stormwarning.py --sendtestmail
+```
+
+Integrate into `main.py`:
+```python
+import stormwarning
+result = stormwarning.tick(cfg, data)
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -52,7 +90,7 @@ jpg/
  ├─ old/           → archive of all images with timestamp
  ├─ classified/    → automatically sorted images & JSON by classification
 json/              → JSON files matching each image
-modules/           → Python modules (capture, upload, openweathermap, classify)
+modules/           → Python modules (capture, upload, openweathermap, classify, stormwarning)
 main.py            → entry point
 ```
 
@@ -80,6 +118,15 @@ main.py            → entry point
         "wind_speed_ms": 4.63,
         "clouds_percent": 75,
         "weather_id": 803
+    },
+    "stormwarning": {
+        "prev_state": "OK",
+        "new_state": "OK",
+        "mailed": false,
+        "wind_speed": 4.63,
+        "wind_gust": null,
+        "location": "Laufamholz",
+        "state_file": "json/stormwarning/storm_state.json"
     }
 }
 ```
@@ -98,7 +145,7 @@ The bottom of the image is blurred to protect my neighbours’ privacy.
 ## Installation & Usage
 
 1. Clone or extract the project.  
-2. Adjust configuration in `config.local.json` (OpenWeatherMap API key, upload settings).  
+2. Adjust configuration in `config.local.json` (OpenWeatherMap API key, upload settings, SMTP settings for stormwarning).  
 3. Install dependencies:
    ```bash
    pip install requests
