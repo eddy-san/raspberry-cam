@@ -1,6 +1,7 @@
 import json
 import shutil
 import sys
+import datetime
 from pathlib import Path
 from modules.capture import capture_fswebcam
 from modules.upload import upload
@@ -35,31 +36,35 @@ def main():
     # === Nacht / kein Bild ===
     if img_path is None or not img_path.exists():
         print("🌙 Kein Bild aufgenommen (Nacht oder Skip) – keine Verarbeitung.")
-        sys.exit(0)   # Exit 0 = alles ok, nur nichts zu tun
+        sys.exit(0)
 
     print("➡️ img_path:", img_path)
 
     # Ab hier nur wenn ein Bild existiert
-    weather_data = {}
-
     # Nach jpg/old/ verschieben
     old_path = old_dir / img_path.name
     shutil.move(str(img_path), str(old_path))
     print("📸 Bild verschoben nach:", old_path)
 
-    weather_data["old_path"] = str(old_path)
-
-    # Upload
+    # Upload (z. B. für Webseite o.ä.)
     upload(cfg, fixed_path)
     print("➡️ Upload:", fixed_path)
 
-    # OWM + Klassifikation
-    openweathermap.getOpenweathermapData(weather_data, cfg)
-    classify.classify_weather(weather_data)
+    # ==== Pure Pipeline ====
+    owm = openweathermap.get_openweathermap(cfg)               # dict
+    classification, classification_detail = classify.classify_weather(owm)  # tuple
+    storm = tick(cfg, owm)                                     # dict
 
-    # storm warning
-    tick(cfg, weather_data)
-    
+    # Alles zusammenführen
+    weather_data = {
+        "timestamp": datetime.datetime.now().isoformat(),  # Zeitpunkt der Speicherung
+        "old_path": str(old_path),
+        "openweathermap": owm,
+        "classification": classification,
+        "classification_detail": classification_detail,
+        "stormwarning": storm,
+    }
+
     # JSON speichern
     json_path = json_dir / (old_path.stem + ".json")
     with open(json_path, "w", encoding="utf-8") as f:
@@ -68,12 +73,9 @@ def main():
     print(f"✅ JSON gespeichert: {json_path}")
     print(json.dumps(weather_data, indent=4, ensure_ascii=False))
 
-    # In classified ablegen
+    # In classified ablegen (benötigt classification auf Top-Ebene)
     classified_base_dir = base / "jpg" / "classified"
     classify.copy_to_classified(weather_data, old_path, json_path, classified_base_dir)
-
-    
-
 
 if __name__ == "__main__":
     main()

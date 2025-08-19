@@ -1,29 +1,12 @@
 import shutil
 from pathlib import Path
+from typing import Tuple, Dict, Any
 
-def classify_weather(weather_json: dict) -> None:
+def classify_weather(owm: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     """
-    Erstellt eine einfache englische Klassifikation und speichert sie
-    direkt ins übergebene JSON-Objekt:
-
-    - weather_json["classification"] = "<coverage> [with <phenomenon>][ (storm)]"
-    - weather_json["classification_detail"] = {
-          "coverage": "clear|few clouds|scattered clouds|broken clouds|overcast clouds",
-          "phenomenon": "rain|snow|thunderstorm|drizzle|fog|...|None",
-          "storm": true|false,
-          "wind_speed_ms": <float or None>,
-          "clouds_percent": <int or None>,
-          "weather_id": <int or None>,
-      }
-
-    Regeln:
-      clouds.all -> coverage
-      weather[0].id/main -> phenomenon
-      wind.speed >= 17.0 m/s -> storm
+    Nimmt OWM-Objekt (Roh-JSON) und gibt (classification, classification_detail) zurück.
+    Mutiert NICHT das übergebene Objekt.
     """
-    # ---- Eingaben robust lesen (neu: bevorzugt verschachtelte OWM-Daten)
-    owm = weather_json.get("openweathermap", weather_json)
-
     clouds = owm.get("clouds", {}).get("all", None)
     try:
         clouds = int(clouds) if clouds is not None else None
@@ -45,7 +28,7 @@ def classify_weather(weather_json: dict) -> None:
     except Exception:
         wind_speed = None
 
-    # ---- 1) Base coverage nach clouds.all
+    # coverage
     if isinstance(clouds, int):
         if clouds <= 10:
             coverage = "clear"
@@ -58,10 +41,9 @@ def classify_weather(weather_json: dict) -> None:
         else:
             coverage = "overcast clouds"
     else:
-        # Fallback: wenn Prozent fehlt, am "main" grob orientieren
         coverage = "overcast clouds" if wmain == "Clouds" else "clear"
 
-    # ---- 2) Phenomenon aus id/main (sehr einfach gehalten)
+    # phenomenon
     phenomenon = None
     if isinstance(wid, int):
         if 200 <= wid <= 232:
@@ -73,18 +55,14 @@ def classify_weather(weather_json: dict) -> None:
         elif 600 <= wid <= 622:
             phenomenon = "snow"
         elif 700 <= wid <= 781:
-            # Atmosphere (mist, fog, haze, dust, etc.)
             phenomenon = (wmain or "atmosphere").lower()
-        # 800–804: clear/clouds → kein separates phenomenon nötig
     else:
-        # Kein id vorhanden: falls main etwas anderes als Clouds/Clear ist, nutzen
         if wmain and wmain not in ("Clouds", "Clear"):
             phenomenon = wmain.lower()
 
-    # ---- 3) Sturm-Kennzeichnung aus Wind (>= 17 m/s ~ 61 km/h)
+    # storm flag
     storm = bool(wind_speed is not None and wind_speed >= 17.0)
 
-    # ---- 4) zusammengesetztes Label
     parts = [coverage]
     if phenomenon:
         parts.append(f"with {phenomenon}")
@@ -92,9 +70,7 @@ def classify_weather(weather_json: dict) -> None:
         parts.append("(storm)")
     classification = " ".join(parts)
 
-    # ---- 5) ins JSON schreiben
-    weather_json["classification"] = classification
-    weather_json["classification_detail"] = {
+    detail = {
         "coverage": coverage,
         "phenomenon": phenomenon,
         "storm": storm,
@@ -102,27 +78,12 @@ def classify_weather(weather_json: dict) -> None:
         "clouds_percent": clouds,
         "weather_id": wid,
     }
+    return classification, detail
 
 
 def copy_to_classified(weather_json: dict, old_path: Path, json_path: Path, classified_base_dir: Path) -> Path:
-    """
-    Kopiert JPG + JSON in einen Unterordner von `classified_base_dir`,
-    benannt nach weather_json["classification"] (auto-angelegt).
-
-    Params
-    ------
-    weather_json : dict        # enthält "classification"
-    old_path     : Path        # Pfad zum Quellbild (jpg/old/<timestamp>.jpg)
-    json_path    : Path        # Pfad zur JSON-Datei (json/<timestamp>.json)
-    classified_base_dir : Path # z.B. base / "jpg" / "classified"
-
-    Returns
-    -------
-    Path : Ziel-Unterordner (classified/<safe_label>)
-    """
+    """Unverändert: nutzt classification auf Top-Level für Zielordner."""
     classification_label = weather_json.get("classification", "unclassified")
-
-    # minimal sanitisieren → ordnerfreundlich
     safe_label = "".join(c for c in classification_label if c.isalnum() or c in (" ", "_", "-")).strip()
     safe_label = safe_label.replace(" ", "_").lower() or "unclassified"
 

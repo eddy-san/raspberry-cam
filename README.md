@@ -1,6 +1,6 @@
-# Raspberry Pi Webcam Weather Classification
+# Raspberry Pi Webcam Cloud Classification
 
-This project enables capturing webcam images, automatic archiving, fetching weather data from OpenWeatherMap, and classifying the weather situation.  
+This project enables capturing webcam images, automatic archiving, fetching weather data from OpenWeatherMap, and classifying the cloud situation.  
 All results are saved as JSON files and additionally organized in a `classified` folder to prepare training data for Machine Learning.
 
 ## Features
@@ -21,28 +21,14 @@ All results are saved as JSON files and additionally organized in a `classified`
 - API key & city (`Laufamholz,de`) are loaded from the config file.
 - Timeout handling: if the API does not respond, an error message is written into the JSON object.
 
-### ☁️ Classification (Rule-based)
-- New module `classify.py` creates a simple English classification from OWM data:
+### ☁️ Cloud Classification (Rule-based)
+- New module `classify.py` creates a simple English cloud classification from OWM data:
   - `clouds.all` → cloud coverage (clear, few, scattered, broken, overcast)
   - `weather.id` → phenomenon (rain, snow, thunderstorm, drizzle, fog, …)
   - `wind.speed` → if ≥ 17 m/s, `(storm)` is added
 - Output:
   - `classification`: compact string, e.g. `"overcast clouds with rain"`
   - `classification_detail`: structured details (`coverage`, `phenomenon`, `storm`, `wind_speed_ms`, `clouds_percent`, `weather_id`).
-
-### 📂 JSON Management
-- For each image, a JSON file is generated and stored under `json/<timestamp>.json`.
-- JSON contains:
-  - Path to the archived image (`old_path`)
-  - Weather data from OpenWeatherMap
-  - Classification (string + structured details)
-- Saved nicely formatted with `indent=4`.
-
-### 🤖 Classified Folder (for ML)
-- JPG + JSON are additionally copied into  
-  `jpg/classified/<classification>/`
-- New subfolders are automatically created if not existing.
-- Result: automatically organized training dataset (images + metadata).
 
 ### ⚡ Storm Warning (Automaton)
 - New module `stormwarning.py` implements a **finite state automaton** with three states:
@@ -56,29 +42,11 @@ All results are saved as JSON files and additionally organized in a `classified`
   - Sends an **email notification via SMTP (IONOS-ready)** only when the state changes.
 - Results are also written back into each JSON object under the key `"stormwarning"`, for later analysis together with weather data.
 
-**Example stormwarning block:**
-```json
-"stormwarning": {
-    "prev_state": "OK",
-    "new_state": "WATCH",
-    "mailed": true,
-    "wind_speed": 14.2,
-    "wind_gust": null,
-    "location": "Laufamholz",
-    "state_file": "json/stormwarning/storm_state.json"
-}
-```
-
-Run a test mail:
-```bash
-python3 modules/stormwarning.py --sendtestmail
-```
-
-Integrate into `main.py`:
-```python
-import stormwarning
-result = stormwarning.tick(cfg, data)
-```
+### 🤖 Classified Folder (for ML)
+- JPG + JSON are additionally copied into  
+  `jpg/classified/<classification>/`
+- New subfolders are automatically created if not existing.
+- Result: automatically organized training dataset (images + metadata).
 
 ---
 
@@ -90,6 +58,7 @@ jpg/
  ├─ old/           → archive of all images with timestamp
  ├─ classified/    → automatically sorted images & JSON by classification
 json/              → JSON files matching each image
+ ├─/stormwarning/storm_state.json → OK, WATCH, STORM 
 modules/           → Python modules (capture, upload, openweathermap, classify, stormwarning)
 main.py            → entry point
 ```
@@ -99,17 +68,14 @@ main.py            → entry point
 ```json
 {
     "old_path": "jpg/old/IMG_4903_20250817_131645.jpg",
-    "coord": { "lon": 11.1622, "lat": 49.4663 },
-    "weather": [
-        {
-            "id": 803,
-            "main": "Clouds",
-            "description": "broken clouds",
-            "icon": "04d"
-        }
-    ],
-    "clouds": { "all": 75 },
-    "wind": { "speed": 4.63, "deg": 310 },
+    "openweathermap": {
+        "coord": { "lon": 11.1622, "lat": 49.4663 },
+        "weather": [
+            { "id": 803, "main": "Clouds", "description": "broken clouds", "icon": "04d" }
+        ],
+        "clouds": { "all": 75 },
+        "wind": { "speed": 4.63, "deg": 310 }
+    },
     "classification": "broken clouds",
     "classification_detail": {
         "coverage": "broken clouds",
