@@ -8,6 +8,7 @@ from modules.upload import upload
 from modules import openweathermap
 from modules import classify
 from modules.stormwarning import tick
+from modules.rainintensity import generate, DEFAULT_TILES
 
 def main():
     base = Path(__file__).parent
@@ -46,9 +47,37 @@ def main():
     shutil.move(str(img_path), str(old_path))
     print("📸 Bild verschoben nach:", old_path)
 
+    # Regenintensität	
+    generate(
+	cfg,
+        # Ausgabepfade
+        output_image_path="/media/ssd/webcam/scripts/jpg/current/radar_Nuremberg_zoom6.jpg",
+        bg_image_path="/media/ssd/webcam/scripts/jpg/current/IMG_4903.jpg",
+        
+	# Cache-Pfade
+	radar_image_cache_path="/media/ssd/webcam/scripts/jpg/cache/radar_last.png",
+	basemap_image_cache_path="/media/ssd/webcam/scripts/jpg/cache/basemap.png",  # ← einmalig erzeugt & wiederverwendet
+
+        tiles=DEFAULT_TILES,       # 2×2 Tiles
+        zoom=6,
+        legend=True, 		   # Legende einschalten
+        legend_width=54,           # Breite der Legendenleiste (vor Resize)
+        overlay_size=(400, 322),   # Größe des Overlays im BG-Bild
+        margin_right=90,           # Abstand zu rechten/unteren Rand
+        margin_bottom=135,         # Abstand von unten
+        crop_bottom=100,           # Radar-JPG unten kürzen
+	opacity=0.85,              # 0..1
+	border=True,               # Rahmen einschalten
+        border_width=4,            # Rahmenstärke
+        border_color="#808080",    # hübsches Grau
+        # palette=2, smooth=1, snow=1, timeout=8.0, retries=2, jpg_quality=92
+    )
+
+
     # Upload (z. B. für Webseite o.ä.)
     upload(cfg, fixed_path)
     print("➡️ Upload:", fixed_path)
+
 
     # ==== Pure Pipeline ====
     owm = openweathermap.get_openweathermap(cfg)               # dict

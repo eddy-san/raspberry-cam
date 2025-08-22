@@ -54,7 +54,7 @@ convert "$CURRENT_DIR/lightly.png" "$CURRENT_DIR/fully.png" "$CURRENT_DIR/mask.p
 # Text einfügen
 convert "$OUT_IMG" \
   -gravity southeast -pointsize 20 -fill white \
-  -annotate +10+90 "$OVERLAY_TEXT" "$OUT_IMG"
+  -annotate +75+90 "$OVERLAY_TEXT" "$OUT_IMG"
 
 # Live-Bild erzeugen
 cp "$OUT_IMG" "$LIVE_IMG"
