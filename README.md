@@ -99,7 +99,7 @@ main.py            → entry point
 
 ---
 
-## Sample Image (broken clouds)
+## Sample Image (scattered clouds)
 
 Here’s a sample capture from the Raspberry Pi webcam.  
 The bottom of the image is blurred to protect my neighbours’ privacy.
